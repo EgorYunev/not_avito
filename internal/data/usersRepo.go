@@ -6,11 +6,11 @@ import (
 	"github.com/EgorYunev/not_avito/internal/models"
 )
 
-type UserQuery struct {
+type UserRepository struct {
 	DB *sql.DB
 }
 
-func (u *UserQuery) Insert(model *models.User) error {
+func (u *UserRepository) Insert(model *models.User) error {
 	stmt := `INSERT INTO users (name, email, password)
 			VALUES ($1, $2, $3)`
 
@@ -22,7 +22,7 @@ func (u *UserQuery) Insert(model *models.User) error {
 	return nil
 }
 
-func (u *UserQuery) GetById(id int) (*models.User, error) {
+func (u *UserRepository) GetById(id int) (*models.User, error) {
 	stmt := `SELECT * FROM users
 			WHERE id = $1`
 

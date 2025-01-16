@@ -6,25 +6,32 @@ import (
 
 	"github.com/EgorYunev/not_avito/config"
 	"github.com/EgorYunev/not_avito/internal/data"
+	"github.com/EgorYunev/not_avito/internal/services"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
 type Application struct {
-	Server *mux.Router
-	Logger *zap.Logger
+	Server      *mux.Router
+	Logger      *zap.Logger
+	UserService *services.UserService
 }
 
 func main() {
 
 	config.ServerPort = *flag.String("port", ":8080", "Server port")
 
-	app := &Application{}
+	app := &Application{
+		UserService: &services.UserService{},
+	}
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 	app.Logger = logger
 	logger.Info("Connecting to database")
-	data.Start()
+	db := data.Start()
+	defer db.Close()
+
+	app.UserService.UserRepository.DB = db
 
 	logger.Info("Starting server")
 

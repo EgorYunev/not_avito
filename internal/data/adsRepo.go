@@ -2,6 +2,6 @@ package data
 
 import "database/sql"
 
-type AdQuery struct {
+type AdRepository struct {
 	DB *sql.DB
 }

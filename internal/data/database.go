@@ -15,8 +15,6 @@ func Start() *sql.DB {
 		log.Fatal(err)
 	}
 
-	defer db.Close()
-
 	err = db.Ping()
 
 	if err != nil {
