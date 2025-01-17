@@ -43,3 +43,22 @@ func (u *UserRepository) GetById(id int) (*models.User, error) {
 	return user, nil
 
 }
+
+func (u *UserRepository) GetByEmail(email string) (*models.User, error) {
+	stmt := `SELECT * FROM users WHERE email = $1`
+
+	row := u.DB.QueryRow(stmt, email)
+
+	user := &models.User{}
+
+	err := row.Scan(&user.Id, &user.Name, &user.Email, &user.Password)
+
+	if err != nil {
+		return nil, err
+	}
+	if row.Err() != nil {
+		return nil, row.Err()
+	}
+
+	return user, nil
+}

@@ -17,6 +17,7 @@ type UserService struct {
 func (s *UserService) CreateUser(user *models.User) error {
 
 	user.Password = generateHashPassword(user.Password)
+	fmt.Println(user.Password)
 
 	err := s.UserRepository.Insert(user)
 
@@ -27,9 +28,27 @@ func (s *UserService) CreateUser(user *models.User) error {
 	return nil
 }
 
+func (s *UserService) Authorize(email, password string) (bool, error) {
+
+	user, err := s.UserRepository.GetByEmail(email)
+
+	if err != nil {
+		return false, err
+	}
+
+	pass := generateHashPassword(password)
+
+	if pass == user.Password {
+		return true, nil
+	} else {
+		return false, nil
+	}
+
+}
+
 func (s *UserService) GetById(id int) (*models.User, error) {
 
-	user, err := s.GetById(id)
+	user, err := s.UserRepository.GetById(id)
 
 	if err != nil {
 		return nil, err
@@ -43,5 +62,5 @@ func generateHashPassword(pass string) string {
 	hash := sha1.New()
 	hash.Write([]byte(pass))
 
-	return fmt.Sprintf("%s", hash.Sum([]byte(salt)))
+	return fmt.Sprintf("%x", hash.Sum([]byte(salt)))
 }

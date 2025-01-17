@@ -22,7 +22,9 @@ func main() {
 	config.ServerPort = *flag.String("port", ":8080", "Server port")
 
 	app := &Application{
-		UserService: &services.UserService{},
+		UserService: &services.UserService{
+			UserRepository: &data.UserRepository{},
+		},
 	}
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
