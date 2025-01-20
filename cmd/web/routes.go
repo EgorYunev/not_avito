@@ -32,7 +32,40 @@ func renderJSON(w http.ResponseWriter, v interface{}) {
 	w.Write(js)
 }
 
+func checkToken(w http.ResponseWriter, r *http.Request) (bool, error) {
+
+	tokenStr := r.Header.Get("Token")
+
+	token, err := auth.ParseJWT(tokenStr)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return false, err
+	}
+
+	if !token.Valid {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (a *Application) home(w http.ResponseWriter, r *http.Request) {
+
+	ok, err := checkToken(w, r)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if !ok {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		http.Redirect(w, r, "/auth", http.StatusMovedPermanently)
+		return
+	}
+
 	w.Write([]byte("Hello"))
 }
 
@@ -64,6 +97,9 @@ func (a *Application) authrorize(w http.ResponseWriter, r *http.Request) {
 		}
 
 		r.Header.Set("Token", token)
+		w.WriteHeader(http.StatusOK)
+
+		w.Write([]byte(token))
 
 	}
 
