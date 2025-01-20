@@ -28,20 +28,20 @@ func (s *UserService) CreateUser(user *models.User) error {
 	return nil
 }
 
-func (s *UserService) Authorize(email, password string) (bool, error) {
+func (s *UserService) Authorize(email, password string) (int, error) {
 
 	user, err := s.UserRepository.GetByEmail(email)
 
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 
 	pass := generateHashPassword(password)
 
 	if pass == user.Password {
-		return true, nil
+		return user.Id, nil
 	} else {
-		return false, nil
+		return 0, nil
 	}
 
 }

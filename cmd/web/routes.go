@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -15,7 +16,7 @@ func (a *Application) start() error {
 	r := mux.NewRouter()
 	r.HandleFunc("/", a.home).Methods("GET")
 	r.HandleFunc("/user", a.getUserById).Methods("GET")
-	r.HandleFunc("/user", a.createUser).Methods("POST")
+	r.HandleFunc("/register", a.register).Methods("POST")
 	r.HandleFunc("/auth", a.authrorize).Methods("POST")
 	return http.ListenAndServe(config.ServerPort, r)
 }
@@ -32,41 +33,18 @@ func renderJSON(w http.ResponseWriter, v interface{}) {
 	w.Write(js)
 }
 
-func checkToken(w http.ResponseWriter, r *http.Request) (bool, error) {
-
-	tokenStr := r.Header.Get("Token")
-
-	token, err := auth.ParseJWT(tokenStr)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return false, err
-	}
-
-	if !token.Valid {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return false, nil
-	}
-
-	return true, nil
-}
-
 func (a *Application) home(w http.ResponseWriter, r *http.Request) {
 
-	ok, err := checkToken(w, r)
+	email, err := auth.ParseJWT(r.Header.Get("Token"))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if !ok {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		http.Redirect(w, r, "/auth", http.StatusMovedPermanently)
-		return
-	}
+	fmt.Println(email)
 
-	w.Write([]byte("Hello"))
+	w.Write([]byte(email))
 }
 
 func (a *Application) authrorize(w http.ResponseWriter, r *http.Request) {
@@ -81,9 +59,9 @@ func (a *Application) authrorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ok, err := a.UserService.Authorize(user.Email, user.Password)
+	id, err := a.UserService.Authorize(user.Email, user.Password)
 
-	if !ok || err != nil {
+	if id == 0 || err != nil {
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		a.Logger.Info("Unauthorized")
 		return
@@ -123,7 +101,7 @@ func (a *Application) getUserById(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (a *Application) createUser(w http.ResponseWriter, r *http.Request) {
+func (a *Application) register(w http.ResponseWriter, r *http.Request) {
 	user := &models.User{}
 
 	dec := json.NewDecoder(r.Body)
