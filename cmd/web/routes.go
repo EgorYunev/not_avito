@@ -15,9 +15,12 @@ import (
 func (a *Application) start() error {
 	r := mux.NewRouter()
 	r.HandleFunc("/", a.home).Methods("GET")
-	r.HandleFunc("/user", a.getUserById).Methods("GET")
+	r.HandleFunc("/user/id", a.getUserById).Methods("GET")
+	r.HandleFunc("/user/email", a.getUserByEmail).Methods("GET")
 	r.HandleFunc("/register", a.register).Methods("POST")
 	r.HandleFunc("/auth", a.authrorize).Methods("POST")
+	r.HandleFunc("/ad", a.createAd).Methods("POST")
+	r.HandleFunc("/ad", a.deleteAd).Methods("DELETE")
 	return http.ListenAndServe(config.ServerPort, r)
 }
 
@@ -101,6 +104,28 @@ func (a *Application) getUserById(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (a *Application) getUserByEmail(w http.ResponseWriter, r *http.Request) {
+
+	uEmail, err := auth.ParseJWT(r.Header.Get("Token"))
+
+	if err != nil || uEmail == "" {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	email := r.URL.Query().Get("email")
+
+	user, err := a.UserService.GetByEmail(email)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.Logger.Error(err.Error())
+		return
+	}
+
+	renderJSON(w, user)
+}
+
 func (a *Application) register(w http.ResponseWriter, r *http.Request) {
 	user := &models.User{}
 
@@ -121,5 +146,63 @@ func (a *Application) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.Logger.Info("New user created")
+
+}
+
+func (a *Application) createAd(w http.ResponseWriter, r *http.Request) {
+
+	token := r.Header.Get("Token")
+	email, err := auth.ParseJWT(token)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	user, err := a.UserService.GetByEmail(email)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		a.Logger.Error(err.Error())
+		return
+	}
+
+	ad := &models.Ad{}
+	dec := json.NewDecoder(r.Body)
+
+	if err = dec.Decode(ad); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		a.Logger.Error(err.Error())
+		return
+	}
+	ad.UserId = user.Id
+
+	a.AdService.CreateAd(ad)
+}
+
+func (a *Application) deleteAd(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Token")
+
+	email, err := auth.ParseJWT(token)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	fmt.Println(email)
+	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+
+	if err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		a.Logger.Error(err.Error())
+		return
+	}
+
+	err = a.AdService.Delete(id, email)
+
+	if err != nil {
+		http.Error(w, "You don't have permission for delete ad", http.StatusForbidden)
+		a.Logger.Info(err.Error())
+		return
+	}
 
 }

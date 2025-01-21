@@ -58,6 +58,17 @@ func (s *UserService) GetById(id int) (*models.User, error) {
 
 }
 
+func (s *UserService) GetByEmail(email string) (*models.User, error) {
+
+	user, err := s.UserRepository.GetByEmail(email)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func generateHashPassword(pass string) string {
 	hash := sha1.New()
 	hash.Write([]byte(pass))

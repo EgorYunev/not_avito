@@ -15,6 +15,7 @@ type Application struct {
 	Server      *mux.Router
 	Logger      *zap.Logger
 	UserService *services.UserService
+	AdService   *services.AdService
 }
 
 func main() {
@@ -25,6 +26,9 @@ func main() {
 		UserService: &services.UserService{
 			UserRepository: &data.UserRepository{},
 		},
+		AdService: &services.AdService{
+			Repo: &data.AdRepository{},
+		},
 	}
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
@@ -34,6 +38,7 @@ func main() {
 	defer db.Close()
 
 	app.UserService.UserRepository.DB = db
+	app.AdService.Repo.DB = db
 
 	logger.Info("Starting server")
 
