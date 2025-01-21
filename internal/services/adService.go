@@ -31,3 +31,13 @@ func (s *AdService) Delete(adId int, email string) error {
 
 	return nil
 }
+
+func (s *AdService) ChangeAd(ad *models.Ad, email string) error {
+
+	err := s.Repo.ChangeAd(ad, email)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

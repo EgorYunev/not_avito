@@ -42,3 +42,27 @@ func (r *AdRepository) Delete(adId int, email string) error {
 
 	return nil
 }
+
+func (r *AdRepository) ChangeAd(ad *models.Ad, email string) error {
+	row := r.DB.QueryRow("SELECT id FROM users WHERE email = $1", email)
+
+	var id int
+	row.Scan(&id)
+
+	if row.Err() != nil {
+		return row.Err()
+	}
+
+	ad.UserId = id
+
+	stmt := `UPDATE ads SET title = $1, description = $2, price = $3
+			WHERE id = $4`
+	_, err := r.DB.Exec(stmt, ad.Title, ad.Description, ad.Price, ad.Id)
+
+	if err != nil {
+		return err
+	}
+
+	return err
+
+}

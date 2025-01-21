@@ -21,6 +21,7 @@ func (a *Application) start() error {
 	r.HandleFunc("/auth", a.authrorize).Methods("POST")
 	r.HandleFunc("/ad", a.createAd).Methods("POST")
 	r.HandleFunc("/ad", a.deleteAd).Methods("DELETE")
+	r.HandleFunc("/ad", a.changeAd).Methods("PUT")
 	return http.ListenAndServe(config.ServerPort, r)
 }
 
@@ -205,4 +206,32 @@ func (a *Application) deleteAd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+}
+
+func (a *Application) changeAd(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Token")
+
+	email, err := auth.ParseJWT(token)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	dec := json.NewDecoder(r.Body)
+
+	ad := &models.Ad{
+		Id: id,
+	}
+	if err := dec.Decode(ad); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	a.AdService.ChangeAd(ad, email)
 }
