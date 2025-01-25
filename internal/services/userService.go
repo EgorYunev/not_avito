@@ -2,7 +2,9 @@ package services
 
 import (
 	"crypto/sha1"
+	"errors"
 	"fmt"
+	"log"
 
 	"github.com/EgorYunev/not_avito/internal/data"
 	"github.com/EgorYunev/not_avito/internal/models"
@@ -16,10 +18,21 @@ type UserService struct {
 
 func (s *UserService) CreateUser(user *models.User) error {
 
+	check, err := s.UserRepository.GetByEmail(user.Email)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	if check.Email == user.Email {
+		busy := errors.New("Email is busy")
+		return busy
+	}
+
 	user.Password = generateHashPassword(user.Password)
 	fmt.Println(user.Password)
 
-	err := s.UserRepository.Insert(user)
+	err = s.UserRepository.Insert(user)
 
 	if err != nil {
 		return err
