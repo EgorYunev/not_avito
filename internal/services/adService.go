@@ -41,3 +41,14 @@ func (s *AdService) ChangeAd(ad *models.Ad, email string) error {
 
 	return nil
 }
+
+func (s *AdService) Search(req *models.Ad) ([]*models.Ad, error) {
+
+	result, err := s.Repo.GetAdsByCityAndTitle(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}

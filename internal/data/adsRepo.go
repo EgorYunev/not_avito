@@ -11,9 +11,9 @@ type AdRepository struct {
 }
 
 func (r *AdRepository) Insert(ad *models.Ad) error {
-	stmt := `INSERT INTO ads (title, description, price, user_id)
-			VALUES ($1, $2, $3, $4)`
-	_, err := r.DB.Exec(stmt, ad.Title, ad.Description, ad.Price, ad.UserId)
+	stmt := `INSERT INTO ads (title, description, price, user_id, city)
+			VALUES ($1, $2, $3, $4, $5)`
+	_, err := r.DB.Exec(stmt, ad.Title, ad.Description, ad.Price, ad.UserId, ad.City)
 	if err != nil {
 		return err
 	}
@@ -65,4 +65,29 @@ func (r *AdRepository) ChangeAd(ad *models.Ad, email string) error {
 
 	return err
 
+}
+
+func (r *AdRepository) GetAdsByCityAndTitle(req *models.Ad) ([]*models.Ad, error) {
+	stmt := `SELECT * FROM ads
+			WHERE title = $1 AND city = $2`
+
+	rows, err := r.DB.Query(stmt, req.Title, req.City)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := []*models.Ad{}
+	for rows.Next() {
+		ad := &models.Ad{}
+
+		rows.Scan(&ad.Id, &ad.Title, &ad.Description, &ad.Price, &ad.UserId, &ad.City)
+		result = append(result, ad)
+	}
+
+	if rows.Err() != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

@@ -22,6 +22,8 @@ func (a *Application) start() error {
 	r.HandleFunc("/ad", a.createAd).Methods("POST")
 	r.HandleFunc("/ad", a.deleteAd).Methods("DELETE")
 	r.HandleFunc("/ad", a.changeAd).Methods("PUT")
+	r.HandleFunc("/search", a.search).Methods("GET")
+	r.HandleFunc("/account", a.account).Methods("GET")
 	return http.ListenAndServe(config.ServerPort, r)
 }
 
@@ -177,6 +179,8 @@ func (a *Application) createAd(w http.ResponseWriter, r *http.Request) {
 	}
 	ad.UserId = user.Id
 
+	fmt.Println(*ad)
+
 	a.AdService.CreateAd(ad)
 }
 
@@ -234,4 +238,48 @@ func (a *Application) changeAd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.AdService.ChangeAd(ad, email)
+}
+
+func (a *Application) search(w http.ResponseWriter, r *http.Request) {
+
+	dec := json.NewDecoder(r.Body)
+
+	request := &models.Ad{}
+
+	if err := dec.Decode(request); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	result, err := a.AdService.Search(request)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.Logger.Error(err.Error())
+		return
+	}
+
+	renderJSON(w, result)
+}
+
+func (a *Application) account(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Token")
+
+	email, err := auth.ParseJWT(token)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		a.Logger.Error(err.Error())
+		return
+	}
+
+	user, err := a.UserService.GetByEmail(email)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.Logger.Error(err.Error())
+		return
+	}
+
+	renderJSON(w, user)
+
 }
